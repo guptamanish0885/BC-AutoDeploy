@@ -8,6 +8,9 @@
       "environment": "Sandbox",
       "type": "Sandbox"
     }
-  ]
+  ],
+  "environmentsMatrix": {
+    "Sandbox": {}
+  }
 }
 
