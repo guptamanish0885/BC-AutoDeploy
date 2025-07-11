@@ -185,6 +185,25 @@ jobs:
           artifactsFolder: '.artifacts'
           deploymentEnvironmentsJson: ${{ needs.Initialization.outputs.deploymentEnvironmentsJson }}
 
+  DebugMatrix:
+    needs: [Initialization]
+    runs-on: windows-latest
+    steps:
+      - name: Print environment matrix
+        run: |
+          echo "Matrix JSON Output:"
+          echo '${{ needs.Initialization.outputs.environmentsMatrixJson }}'
+
+      - name: Print deployment environments JSON
+        run: |
+          echo "Deployment Environments Output:"
+          echo '${{ needs.Initialization.outputs.deploymentEnvironmentsJson }}'
+
+      - name: Print environment count
+        run: |
+          echo "Environment Count:"
+          echo '${{ needs.Initialization.outputs.environmentCount }}'
+          
   PostProcess:
     needs: [ Initialization, Deploy ]
     if: always()
