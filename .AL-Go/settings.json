@@ -4,12 +4,18 @@
   "appFolders": ["Apps"],
   "deploymentEnvironments": [
     {
+      "name": "Production",
+      "environment": "Production",
+      "type": "Cloud"
+    },
+    {
       "name": "Sandbox",
       "environment": "Sandbox",
-      "type": "Sandbox"
+      "type": "Cloud"
     }
   ],
   "environmentsMatrix": {
+    "Production": {},
     "Sandbox": {}
   }
 }
