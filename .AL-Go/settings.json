@@ -7,12 +7,39 @@
       "name": "Sandbox",
       "environment": "Sandbox",
       "type": "Sandbox"
+    },
+    {
+      "name": "SandboxNL",
+      "environment": "SandboxNL",
+      "type": "Sandbox"
+    },
+    {
+      "name": "GESANDBOX",
+      "environment": "GESANDBOX",
+      "type": "Sandbox"
+    },
+    {
+      "name": "Production",
+      "environment": "Production",
+      "type": "Production"
     }
   ],
   "environmentsMatrix": {
-    "A2DeskSandbox": {
+    "Sandbox": {
       "os": "windows-latest",
-      "shell": "powershell"
+      "shell": "pwsh"
+    },
+    "SandboxNL": {
+      "os": "windows-latest",
+      "shell": "pwsh"
+    },
+    "GESANDBOX": {
+      "os": "windows-latest",
+      "shell": "pwsh"
+    },
+    "Production": {
+      "os": "windows-latest",
+      "shell": "pwsh"
     }
   }
 }
