@@ -1,1 +1,15 @@
-
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go-Actions/v7.2/settings.schema.json",
+  "country": "us",
+  "appFolders": ["Apps"],
+  "deploymentEnvironments": [
+    {
+      "name": "Sandbox",
+      "environment": "Sandbox",
+      "type": "Sandbox"
+    }
+  ],
+  "environmentsMatrix": {
+    "Sandbox": {}
+  }
+}
