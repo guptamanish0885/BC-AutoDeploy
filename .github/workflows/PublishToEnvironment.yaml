@@ -1,4 +1,4 @@
-name: 'Publish To Environment'
+name: "Publish To Environment"
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
       appVersion:
         description: App version to deploy to environment(s) (current, prerelease, draft, latest, version number or PR_<PR Id>)
         required: false
-        default: 'Sandbox'
+        default: 'current'
       environmentName:
         description: Environment mask to receive the new version (* for all, PROD* for all environments starting with PROD)
         required: true
@@ -23,49 +23,73 @@ defaults:
 env:
   ALGoOrgSettings: ${{ vars.ALGoOrgSettings }}
   ALGoRepoSettings: ${{ vars.ALGoRepoSettings }}
-  secrets: ${{ vars.ALGitHubSecrets }}
+  secrets: ${{ vars.ALGoUsedSecrets }}
 
 jobs:
   Initialization:
     runs-on: windows-latest
     outputs:
       deploymentEnvironmentsJson: ${{ steps.SetOutputs.outputs.deploymentEnvironmentsJson }}
-      environmentsMatrixJson: ${{ steps.SetOutputs.outputs.environmentsMatrixJson }}
+      environmentMatrixJson: ${{ steps.SetOutputs.outputs.environmentMatrixJson }}
+
     steps:
       - name: Read settings
+        id: ReadSettings
         uses: microsoft/AL-Go-Actions/ReadSettings@v7.2
-        with:
-          shell: pwsh
-          get: deploymentEnvironments,environmentsMatrix
 
       - name: Set deployment outputs
         id: SetOutputs
         run: |
-          $envs = '${{ toJson(deploymentEnvironments) }}'
-          $matrix = '${{ toJson(environmentsMatrix) }}'
-          echo "deploymentEnvironmentsJson=$envs" >> $env:GITHUB_OUTPUT
-          echo "environmentsMatrixJson=$matrix" >> $env:GITHUB_OUTPUT
+          echo "deploymentEnvironmentsJson=${{ toJson(steps.ReadSettings.outputs.deploymentEnvironments) }}" >> $env:GITHUB_OUTPUT
+          echo "environmentMatrixJson=${{ toJson(steps.ReadSettings.outputs.environmentsMatrix) }}" >> $env:GITHUB_OUTPUT
 
   Deploy:
     needs: Initialization
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     strategy:
-      matrix: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}
+      matrix: ${{ fromJson(needs.Initialization.outputs.environmentMatrixJson) }}
+
+    environment: ${{ matrix.environment }}
+    env:
+      deviceCode: ${{ needs.Initialization.outputs.deviceCode }}
+      deploymentEnvironmentsJson: ${{ needs.Initialization.outputs.deploymentEnvironmentsJson }}
+      environmentMatrixJson: ${{ needs.Initialization.outputs.environmentMatrixJson }}
+
     steps:
-      - name: Publish AL Apps
-        uses: microsoft/AL-Go-Actions/PublishApps@v7.2
+      - name: Checkout
+        uses: actions/checkout@v4.2.0
+
+      - name: EnvName
+        id: envName
+        run: |
+          $envName = "${{ matrix.environment }}".Split(',')[0]
+          Add-Content -Encoding UTF8 -Path $env:GITHUB_OUTPUT -Value "envName=$envName"
+
+      - name: Read secrets
+        id: ReadSecrets
+        uses: microsoft/AL-Go-Actions/ReadSecrets@v7.2
         with:
-          shell: pwsh
+          shell: ${{ matrix.shell }}
+          getSecrets: '${{ toJson(secrets) }}'
+          authContext: '${{ steps.envName.outputs.envName }}_AuthContext,AuthContext'
+
+      - name: Get Artifacts for deployment
+        uses: microsoft/AL-Go-Actions/GetArtifactsForDeployment@v7.2
+        with:
+          shell: ${{ matrix.shell }}
+          artifactsVersion: ${{ github.event.inputs.appVersion }}
+          artifactsFolder: .artifacts
+
+      - name: Deploy to Business Central
+        uses: microsoft/AL-Go-Actions/DeployToBcEnvironment@v7.2
+        with:
+          shell: ${{ matrix.shell }}
           environmentName: ${{ matrix.environment }}
-          appVersion: ${{ github.event.inputs.appVersion }}
-          publishToAppSource: false
-          useNewAppManagement: true
+          artifactsFolder: .artifacts
 
   PostProcess:
-    needs: [Deploy]
+    if: ${{ always() }}
     runs-on: windows-latest
-    if: always()
     steps:
-      - name: Post deployment summary
-        run: echo "Deployment complete. Check logs and status above."
-
+      - name: Done
+        run: echo "Post process done."
