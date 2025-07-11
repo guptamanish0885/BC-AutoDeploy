@@ -30,7 +30,7 @@ jobs:
     runs-on: windows-latest
     outputs:
       deploymentEnvironmentsJson: ${{ steps.setoutputs.outputs.deploymentEnvironmentsJson }}
-      environmentMatrixJson: ${{ steps.setoutputs.outputs.environmentMatrixJson }}
+      environmentsMatrixJson: ${{ steps.setoutputs.outputs.environmentsMatrixJson }}  # ✅ fixed name
     steps:
       - name: Read settings
         id: readsettings
@@ -45,14 +45,14 @@ jobs:
         id: setoutputs
         run: |
           echo "deploymentEnvironmentsJson=${{ steps.readsettings.outputs.deploymentEnvironments }}" >> $env:GITHUB_OUTPUT
-          echo "environmentMatrixJson=${{ steps.readsettings.outputs.environmentsMatrix }}" >> $env:GITHUB_OUTPUT
+          echo "environmentsMatrixJson=${{ steps.readsettings.outputs.environmentsMatrix }}" >> $env:GITHUB_OUTPUT   # ✅ fixed
 
   Deploy:
     name: Deploy to ${{ matrix.environment }}
     needs: Initialization
     runs-on: ${{ matrix.os }}
     strategy:
-      matrix: ${{ fromJson(needs.Initialization.outputs.environmentMatrixJson) }}
+      matrix: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}  # ✅ fixed
     steps:
       - name: Deploy app
         uses: microsoft/AL-Go-Actions/DeployToBcEnvironment@v7.2
@@ -70,4 +70,3 @@ jobs:
       - name: Done
         run: |
           Write-Host "✅ Deployment complete."
-
