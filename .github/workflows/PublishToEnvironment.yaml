@@ -31,7 +31,6 @@ jobs:
     outputs:
       deploymentEnvironmentsJson: ${{ steps.SetOutputs.outputs.deploymentEnvironmentsJson }}
       environmentMatrixJson: ${{ steps.SetOutputs.outputs.environmentMatrixJson }}
-
     steps:
       - name: Read settings
         id: ReadSettings
@@ -40,56 +39,29 @@ jobs:
       - name: Set deployment outputs
         id: SetOutputs
         run: |
-          echo "deploymentEnvironmentsJson=${{ toJson(steps.ReadSettings.outputs.deploymentEnvironments) }}" >> $env:GITHUB_OUTPUT
-          echo "environmentMatrixJson=${{ toJson(steps.ReadSettings.outputs.environmentsMatrix) }}" >> $env:GITHUB_OUTPUT
+          echo "deploymentEnvironmentsJson=${{ toJson(fromJson(steps.ReadSettings.outputs.deploymentEnvironments)) }}" >> $GITHUB_OUTPUT
+          echo "environmentMatrixJson=${{ toJson(fromJson(steps.ReadSettings.outputs.environmentsMatrix)) }}" >> $GITHUB_OUTPUT
 
   Deploy:
+    name: Deploy to ${{ matrix.environment }}
     needs: Initialization
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix: ${{ fromJson(needs.Initialization.outputs.environmentMatrixJson) }}
-
-    environment: ${{ matrix.environment }}
-    env:
-      deviceCode: ${{ needs.Initialization.outputs.deviceCode }}
-      deploymentEnvironmentsJson: ${{ needs.Initialization.outputs.deploymentEnvironmentsJson }}
-      environmentMatrixJson: ${{ needs.Initialization.outputs.environmentMatrixJson }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.0
-
-      - name: EnvName
-        id: envName
-        run: |
-          $envName = "${{ matrix.environment }}".Split(',')[0]
-          Add-Content -Encoding UTF8 -Path $env:GITHUB_OUTPUT -Value "envName=$envName"
-
-      - name: Read secrets
-        id: ReadSecrets
-        uses: microsoft/AL-Go-Actions/ReadSecrets@v7.2
-        with:
-          shell: ${{ matrix.shell }}
-          getSecrets: '${{ toJson(secrets) }}'
-          authContext: '${{ steps.envName.outputs.envName }}_AuthContext,AuthContext'
-
-      - name: Get Artifacts for deployment
-        uses: microsoft/AL-Go-Actions/GetArtifactsForDeployment@v7.2
-        with:
-          shell: ${{ matrix.shell }}
-          artifactsVersion: ${{ github.event.inputs.appVersion }}
-          artifactsFolder: .artifacts
-
-      - name: Deploy to Business Central
+      - name: Deploy App to ${{ matrix.environment }}
         uses: microsoft/AL-Go-Actions/DeployToBcEnvironment@v7.2
         with:
-          shell: ${{ matrix.shell }}
+          authContext: ${{ secrets[format('{0}_AuthContext', matrix.environment)] }}
+          appFolders: ${{ vars.appFolders }}
           environmentName: ${{ matrix.environment }}
-          artifactsFolder: .artifacts
+          appVersion: ${{ github.event.inputs.appVersion }}
+          artifact: ${{ matrix.environment }}
 
   PostProcess:
-    if: ${{ always() }}
     runs-on: windows-latest
+    needs: Deploy
     steps:
-      - name: Done
-        run: echo "Post process done."
+      - name: Post Deployment Summary
+        run: |
+          Write-Host "Deployment completed for all selected environments."
