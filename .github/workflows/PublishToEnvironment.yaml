@@ -29,18 +29,18 @@ jobs:
   Initialization:
     runs-on: windows-latest
     outputs:
-      deploymentEnvironmentsJson: ${{ steps.SetOutputs.outputs.deploymentEnvironmentsJson }}
-      environmentMatrixJson: ${{ steps.SetOutputs.outputs.environmentMatrixJson }}
+      deploymentEnvironmentsJson: ${{ steps.SetDeploymentOutputs.outputs.deploymentEnvironmentsJson }}
+      environmentMatrixJson: ${{ steps.SetDeploymentOutputs.outputs.environmentMatrixJson }}
     steps:
       - name: Read settings
         id: ReadSettings
         uses: microsoft/AL-Go-Actions/ReadSettings@v7.2
 
-      - name: Set deployment outputs
-        id: SetOutputs
+      - name: Set Deployment Outputs
+        id: SetDeploymentOutputs
         run: |
-          echo "deploymentEnvironmentsJson=${{ toJson(fromJson(steps.ReadSettings.outputs.deploymentEnvironments)) }}" >> $GITHUB_OUTPUT
-          echo "environmentMatrixJson=${{ toJson(fromJson(steps.ReadSettings.outputs.environmentsMatrix)) }}" >> $GITHUB_OUTPUT
+          echo "deploymentEnvironmentsJson=${{ steps.ReadSettings.outputs.deploymentEnvironments }}" >> $env:GITHUB_OUTPUT
+          echo "environmentMatrixJson=${{ steps.ReadSettings.outputs.environmentsMatrix }}" >> $env:GITHUB_OUTPUT
 
   Deploy:
     name: Deploy to ${{ matrix.environment }}
@@ -49,7 +49,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.Initialization.outputs.environmentMatrixJson) }}
     steps:
-      - name: Deploy App to ${{ matrix.environment }}
+      - name: Deploy App
         uses: microsoft/AL-Go-Actions/DeployToBcEnvironment@v7.2
         with:
           authContext: ${{ secrets[format('{0}_AuthContext', matrix.environment)] }}
@@ -64,4 +64,4 @@ jobs:
     steps:
       - name: Post Deployment Summary
         run: |
-          Write-Host "Deployment completed for all selected environments."
+          Write-Host "✅ Deployment completed for all selected environments."
