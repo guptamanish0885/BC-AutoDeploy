@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       appVersion:
-        description: App version to deploy to environment(s) (current, prerelease, draft, latest, version number or PR_<PR Id>)
+        description: App version to deploy (current, prerelease, draft, latest, version number or PR_<PR Id>)
         required: false
         default: 'current'
       environmentName:
-        description: Environment mask to receive the new version (* for all, PROD* for all environments starting with PROD)
+        description: Environment mask (* for all, PROD* for PROD only, etc.)
         required: true
 
 permissions:
@@ -29,18 +29,23 @@ jobs:
   Initialization:
     runs-on: windows-latest
     outputs:
-      deploymentEnvironmentsJson: ${{ steps.SetDeploymentOutputs.outputs.deploymentEnvironmentsJson }}
-      environmentMatrixJson: ${{ steps.SetDeploymentOutputs.outputs.environmentMatrixJson }}
+      deploymentEnvironmentsJson: ${{ steps.setoutputs.outputs.deploymentEnvironmentsJson }}
+      environmentMatrixJson: ${{ steps.setoutputs.outputs.environmentMatrixJson }}
     steps:
       - name: Read settings
-        id: ReadSettings
+        id: readsettings
         uses: microsoft/AL-Go-Actions/ReadSettings@v7.2
 
-      - name: Set Deployment Outputs
-        id: SetDeploymentOutputs
+      - name: Debug Settings Output
         run: |
-          echo "deploymentEnvironmentsJson=${{ steps.ReadSettings.outputs.deploymentEnvironments }}" >> $env:GITHUB_OUTPUT
-          echo "environmentMatrixJson=${{ steps.ReadSettings.outputs.environmentsMatrix }}" >> $env:GITHUB_OUTPUT
+          Write-Host "deploymentEnvironments: ${{ steps.readsettings.outputs.deploymentEnvironments }}"
+          Write-Host "environmentsMatrix: ${{ steps.readsettings.outputs.environmentsMatrix }}"
+
+      - name: Set outputs
+        id: setoutputs
+        run: |
+          echo "deploymentEnvironmentsJson=${{ steps.readsettings.outputs.deploymentEnvironments }}" >> $env:GITHUB_OUTPUT
+          echo "environmentMatrixJson=${{ steps.readsettings.outputs.environmentsMatrix }}" >> $env:GITHUB_OUTPUT
 
   Deploy:
     name: Deploy to ${{ matrix.environment }}
@@ -49,7 +54,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.Initialization.outputs.environmentMatrixJson) }}
     steps:
-      - name: Deploy App
+      - name: Deploy app
         uses: microsoft/AL-Go-Actions/DeployToBcEnvironment@v7.2
         with:
           authContext: ${{ secrets[format('{0}_AuthContext', matrix.environment)] }}
@@ -62,6 +67,7 @@ jobs:
     runs-on: windows-latest
     needs: Deploy
     steps:
-      - name: Post Deployment Summary
+      - name: Done
         run: |
-          Write-Host "✅ Deployment completed for all selected environments."
+          Write-Host "✅ Deployment complete."
+
