@@ -4,18 +4,14 @@
   "appFolders": ["Apps"],
   "deploymentEnvironments": [
     {
-      "name": "Production",
-      "environment": "Production",
-      "type": "Cloud"
-    },
-    {
       "name": "Sandbox",
       "environment": "Sandbox",
-      "type": "Cloud"
+      "type": "Sandbox"
     }
   ],
   "environmentsMatrix": {
-    "Production": {},
-    "Sandbox": {}
+    "Sandbox": {
+      "shell": "pwsh"
+    }
   }
 }
