@@ -118,7 +118,12 @@ jobs:
   Deploy:
     needs: [ Initialization ]
     if: needs.Initialization.outputs.environmentCount > 0
-    strategy: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}
+    strategy:
+  matrix:
+    include:
+      - environment: "Sandbox"
+        os: windows-latest
+        shell: pwsh
     runs-on: ${{ fromJson(matrix.os) }}
     name: Deploy to ${{ matrix.environment }}
     defaults:
